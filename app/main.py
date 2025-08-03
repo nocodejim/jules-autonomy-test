@@ -20,6 +20,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/parse")
+
 def parse_documentation(url: str, cache: redis.Redis = Depends(get_cache)):
     cached_result = cache.get(f"parse:{url}")
     if cached_result:
@@ -38,3 +39,5 @@ def infer_schema(api_description: str, cache: redis.Redis = Depends(get_cache)):
     result = infer_schema_from_api(api_description)
     cache.set(f"infer:{api_description}", json.dumps(result))
     return result
+
+
