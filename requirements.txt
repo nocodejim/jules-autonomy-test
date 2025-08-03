@@ -4,3 +4,4 @@ pytest
 httpx
 prance
 openapi-spec-validator
+openai
