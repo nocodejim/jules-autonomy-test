@@ -4,3 +4,9 @@ pytest
 httpx
 prance
 openapi-spec-validator
+openai
+sqlalchemy
+psycopg2-binary
+alembic
+redis
+fakeredis
