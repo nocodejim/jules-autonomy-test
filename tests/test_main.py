@@ -40,6 +40,10 @@ def test_parse_documentation_caching():
         assert "swagger" in response2.json()
         mock_parse_openapi.assert_called_once() # Should still be called only once
 
+import logging
+import io
+import json
+
 def test_infer_schema_caching():
     api_description = "A simple API with one endpoint that returns a list of users."
 
@@ -60,3 +64,19 @@ def test_infer_schema_caching():
         assert response2.status_code == 200
         assert "openapi" in response2.json()
         mock_infer_schema.assert_called_once() # Should still be called only once
+
+def test_logging():
+    log_stream = io.StringIO()
+    logger = logging.getLogger()
+    logger.handlers = []
+    handler = logging.StreamHandler(log_stream)
+    handler.setFormatter(logging.Formatter('{"message": "%(message)s"}'))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logging.info("test message")
+
+    log_output = log_stream.getvalue()
+    log_json = json.loads(log_output)
+
+    assert log_json["message"] == "test message"

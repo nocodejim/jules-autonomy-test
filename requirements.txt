@@ -10,3 +10,4 @@ psycopg2-binary
 alembic
 redis
 fakeredis
+python-json-logger

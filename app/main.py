@@ -2,6 +2,9 @@ from fastapi import FastAPI, Depends
 import json
 from app.cache import get_cache
 import redis
+from app.logging_config import setup_logging
+
+setup_logging()
 
 app = FastAPI()
 
