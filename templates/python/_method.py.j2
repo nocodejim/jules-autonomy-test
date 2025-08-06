@@ -1,0 +1,38 @@
+def {{ operation.operationId | default('unnamed_operation') }}(
+        self{% if operation.get("parameters", []) %},{% endif %}
+        {%- for param in operation.get("parameters", []) %}
+        {{ param.name }}: {% if param.get("required", False) %}{{ "int" if param.schema.get("type") == "integer" else "str" }}{% else %}Optional[{{ "int" if param.schema.get("type") == "integer" else "str" }}] = None{% endif %}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+        {%- if operation.get("requestBody") %},
+        body: Optional[Dict[str, Any]] = None{% endif %}
+    ) -> Dict[str, Any]:
+        """
+        {{ operation.get("summary", "API operation") }}
+        """
+        {%- set query_params = operation.get("parameters", []) | selectattr("in", "equalto", "query") | list %}
+        {%- if query_params %}
+        params = {}
+        {%- for param in query_params %}
+        if {{ param.name }} is not None:
+            params["{{ param.name }}"] = {{ param.name }}
+        {%- endfor %}
+        {%- else %}
+        params = None
+        {%- endif %}
+
+        url = "{{ path }}"
+        {%- set path_params = operation.get("parameters", []) | selectattr("in", "equalto", "path") | list %}
+        {%- for param in path_params %}
+        url = url.replace("{" + "{{ param.name }}" + "}", str({{ param.name }}))
+        {%- endfor %}
+
+        response = self.client.request(
+            "{{ method.upper() }}",
+            url,
+            params=params,
+            {%- if operation.get("requestBody") %}
+            json=body,
+            {%- endif %}
+        )
+        response.raise_for_status()
+        return response.json()

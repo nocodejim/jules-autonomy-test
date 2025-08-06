@@ -1,0 +1,29 @@
+{%- macro get_python_type(prop_schema) -%}
+{%- if prop_schema.get("type") == "integer" -%}
+int
+{%- elif prop_schema.get("type") == "number" -%}
+float
+{%- elif prop_schema.get("type") == "boolean" -%}
+bool
+{%- elif prop_schema.get("type") == "string" -%}
+str
+{%- elif prop_schema.get("type") == "array" -%}
+List[{{ get_python_type(prop_schema.get("items", {})) }}]
+{%- elif prop_schema.get("type") == "object" -%}
+Dict[str, Any]
+{%- elif prop_schema.get("$ref") -%}
+{{ prop_schema.get("$ref").split("/")[-1] }}
+{%- else -%}
+Any
+{%- endif -%}
+{%- endmacro %}
+
+class {{ name }}(BaseModel):
+    {%- for prop_name, prop_schema in schema.get("properties", {}).items() %}
+    {%- set is_required = prop_name in schema.get("required", []) %}
+    {%- set python_type = get_python_type(prop_schema) %}
+    {{ prop_name }}: {% if not is_required %}Optional[{{ python_type }}] = None{% else %}{{ python_type }}{% endif %}
+    {%- endfor %}
+    {%- if not schema.get("properties") %}
+    pass
+    {%- endif %}

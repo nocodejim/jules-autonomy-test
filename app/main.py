@@ -33,6 +33,7 @@ def read_root():
 
 from app.parser import parse_openapi
 from app.inference import infer_schema_from_api
+from app.sdk_generation.python_generator import generate_python_sdk
 from app.discovery import discover_apis
 from app.auth_detection import detect_auth
 from app.endpoint_tester import test_endpoints
@@ -61,6 +62,13 @@ def infer_schema(api_description: str, cache: redis.Redis = Depends(get_cache)):
     result = infer_schema_from_api(api_description)
     cache.set(f"infer:{api_description}", json.dumps(result))
     return result
+
+@app.post("/generate-sdk/python")
+def generate_python_sdk_endpoint(schema: dict):
+    """
+    Generates a Python SDK from a given OpenAPI schema.
+    """
+    return {"sdk": generate_python_sdk(schema)}
 
 @app.post("/discover")
 def discover_endpoint(url: str, cache: redis.Redis = Depends(get_cache)):
