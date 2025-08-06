@@ -21,7 +21,6 @@ def test_health_check():
 
 def test_parse_documentation_caching():
     url = "https://petstore.swagger.io/v2/swagger.json"
-
     with patch('app.main.parse_openapi') as mock_parse_openapi:
         mock_parse_openapi.return_value = {"swagger": "2.0"}
 
@@ -65,6 +64,7 @@ def test_infer_schema_caching():
         assert "openapi" in response2.json()
         mock_infer_schema.assert_called_once() # Should still be called only once
 
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.database import Base
@@ -87,6 +87,7 @@ def override_get_db():
         db.close()
 
 app.dependency_overrides[get_db] = override_get_db
+
 
 def test_logging():
     log_stream = io.StringIO()
@@ -120,3 +121,13 @@ def test_read_apis():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
+    response = client.post("/parse", params={"url": url})
+    assert response.status_code == 200
+    assert "swagger" in response.json()
+
+def test_infer_schema():
+    api_description = "A simple API with one endpoint that returns a list of users."
+    response = client.post("/infer", params={"api_description": api_description})
+    assert response.status_code == 200
+    assert "openapi" in response.json()
+

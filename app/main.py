@@ -1,11 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException
+
+from fastapi import FastAPI, Depends
+
 import json
 from app.cache import get_cache
 import redis
 from app.logging_config import setup_logging
+
 from sqlalchemy.orm import Session
 from . import crud, models, schemas
 from .database import SessionLocal, engine
+
 
 setup_logging()
 
@@ -35,6 +39,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/parse")
+
 def parse_documentation(url: str, cache: redis.Redis = Depends(get_cache)):
     cached_result = cache.get(f"parse:{url}")
     if cached_result:
