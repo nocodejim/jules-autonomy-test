@@ -1,12 +1,31 @@
+
 from fastapi import FastAPI, Depends
+
 import json
 from app.cache import get_cache
 import redis
 from app.logging_config import setup_logging
 
+from sqlalchemy.orm import Session
+from . import crud, models, schemas
+from .database import SessionLocal, engine
+
+
 setup_logging()
 
 app = FastAPI()
+
+@app.on_event("startup")
+def on_startup():
+    models.Base.metadata.create_all(bind=engine)
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.get("/")
 def read_root():
@@ -40,4 +59,18 @@ def infer_schema(api_description: str, cache: redis.Redis = Depends(get_cache)):
     cache.set(f"infer:{api_description}", json.dumps(result))
     return result
 
+@app.post("/apis/", response_model=schemas.Api)
+def create_api(api: schemas.ApiCreate, db: Session = Depends(get_db)):
+    return crud.create_api(db=db, api=api)
 
+@app.get("/apis/", response_model=list[schemas.Api])
+def read_apis(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    apis = crud.get_apis(db, skip=skip, limit=limit)
+    return apis
+
+@app.get("/apis/{api_id}", response_model=schemas.Api)
+def read_api(api_id: int, db: Session = Depends(get_db)):
+    db_api = crud.get_api(db, api_id=api_id)
+    if db_api is None:
+        raise HTTPException(status_code=404, detail="Api not found")
+    return db_api

@@ -64,6 +64,31 @@ def test_infer_schema_caching():
         assert "openapi" in response2.json()
         mock_infer_schema.assert_called_once() # Should still be called only once
 
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.database import Base
+from app.main import get_db
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base.metadata.create_all(bind=engine)
+
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db
+
+
 def test_logging():
     log_stream = io.StringIO()
     logger = logging.getLogger()
@@ -79,6 +104,23 @@ def test_logging():
     log_json = json.loads(log_output)
 
     assert log_json["message"] == "test message"
+
+def test_create_api():
+    response = client.post(
+        "/apis/",
+        json={"name": "Test API", "description": "A test API", "schema": {"test": "schema"}},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Test API"
+    assert data["description"] == "A test API"
+    assert data["id"] is not None
+
+def test_read_apis():
+    response = client.get("/apis/")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
     response = client.post("/parse", params={"url": url})
     assert response.status_code == 200
     assert "swagger" in response.json()
@@ -88,3 +130,4 @@ def test_infer_schema():
     response = client.post("/infer", params={"api_description": api_description})
     assert response.status_code == 200
     assert "openapi" in response.json()
+
