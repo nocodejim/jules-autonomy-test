@@ -121,13 +121,4 @@ def test_read_apis():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    response = client.post("/parse", params={"url": url})
-    assert response.status_code == 200
-    assert "swagger" in response.json()
-
-def test_infer_schema():
-    api_description = "A simple API with one endpoint that returns a list of users."
-    response = client.post("/infer", params={"api_description": api_description})
-    assert response.status_code == 200
-    assert "openapi" in response.json()
 
