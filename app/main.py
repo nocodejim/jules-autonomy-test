@@ -33,6 +33,9 @@ def read_root():
 
 from app.parser import parse_openapi
 from app.inference import infer_schema_from_api
+from app.discovery import discover_apis
+from app.auth_detection import detect_auth
+from app.endpoint_tester import test_endpoints
 
 @app.get("/health")
 def health_check():
@@ -58,6 +61,33 @@ def infer_schema(api_description: str, cache: redis.Redis = Depends(get_cache)):
     result = infer_schema_from_api(api_description)
     cache.set(f"infer:{api_description}", json.dumps(result))
     return result
+
+@app.post("/discover")
+def discover_endpoint(url: str, cache: redis.Redis = Depends(get_cache)):
+    """
+    Discovers potential API documentation links from a given URL.
+    """
+    cached_result = cache.get(f"discover:{url}")
+    if cached_result:
+        return json.loads(cached_result)
+
+    result = discover_apis(url)
+    cache.set(f"discover:{url}", json.dumps(result))
+    return {"discovered_urls": result}
+
+@app.post("/detect-auth")
+def detect_auth_endpoint(schema: dict):
+    """
+    Detects authentication methods from a given OpenAPI schema.
+    """
+    return detect_auth(schema)
+
+@app.post("/test-endpoints")
+async def test_endpoints_endpoint(schema: dict):
+    """
+    Tests the liveness of endpoints from a given OpenAPI schema.
+    """
+    return await test_endpoints(schema)
 
 @app.post("/apis/", response_model=schemas.Api)
 def create_api(api: schemas.ApiCreate, db: Session = Depends(get_db)):

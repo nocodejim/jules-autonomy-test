@@ -11,4 +11,6 @@ alembic
 redis
 fakeredis
 python-json-logger
+requests
+beautifulsoup4
 
